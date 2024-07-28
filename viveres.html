@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viveres su Despensa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('1.jpg'); 
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: rgb(0, 0, 0);
+        }
+        .login-container, .dashboard, .product-container, .search-container, .top-products-container {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2, h1 {
+            margin-bottom: 20px;
+        }
+        input {
+            margin-bottom: 10px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            background-color: #5cb85c;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        #errorMessage, #successMessage, #deleteMessage, #priceErrorMessage, #dateErrorMessage {
+            color: red;
+            display: none;
+        }
+        #successMessage {
+            color: green;
+        }
+        .dashboard {
+            display: none;
+            text-align: center;
+        }
+        .option {
+            margin: 10px 0;
+        }
+        .option button {
+            background-color: #007bff;
+        }
+        .option button:hover {
+            background-color: #0056b3;
+        }
+        .product-list, .search-results, .top-products-list {
+            margin-top: 20px;
+        }
+        .product-item, .search-item, .top-product-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .product-item img, .search-item img, .top-product-item img {
+            width: 100px;
+            height: 100px;
+            margin-right: 10px;
+        }
+        .product-item button, .search-item button, .top-product-item button {
+            background-color: #dc3545;
+            width: auto;
+            margin-left: 10px;
+        }
+        .product-item button:hover, .search-item button:hover, .top-product-item button:hover {
+            background-color: #c82333;
+        }
+        .product-container, .search-container, .top-products-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Ingreso de Usuario</h2>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+        <p id="errorMessage">Usuario o contraseña incorrectos.</p>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <img src="2.png" alt="Logo" style="width: 250px; margin-bottom: 20px;">
+        <h1>¡Bienvenido Viveres su Despensa!</h1>
+        <div class="option">
+            <button onclick="showProductContainer()">Registro y Eliminación de Producto</button>
+        </div>
+        <div class="option">
+            <button onclick="showSearchContainer()">Búsqueda de Productos por Fecha de Vencimiento</button>
+        </div>
+        <div class="option">
+            <button onclick="showTopProductsContainer()">Búsqueda de Productos Más Vendidos</button>
+        </div>
+    </div>
+
+    <div class="product-container" id="productContainer">
+        <h1>Gestión de Productos</h1>
+        <form id="productForm">
+            <input type="text" id="productName" placeholder="Nombre del Producto" required>
+            <input type="date" id="productExpiration" placeholder="Fecha de Vencimiento" required>
+            <input type="url" id="productImage" placeholder="URL de la Imagen" required>
+            <input type="number" id="productPrice" placeholder="Precio" required>
+            <button type="submit">Agregar Producto</button>
+        </form>
+        <p id="successMessage">Producto agregado correctamente.</p>
+        <p id="errorMessage">El producto ya existe.</p>
+        <p id="deleteMessage">Se eliminó correctamente.</p>
+        <p id="priceErrorMessage">El precio debe ser mayor que 0.</p>
+        <p id="dateErrorMessage">La fecha de vencimiento debe ser en 2024 o anterior.</p>
+        <div class="product-list" id="productList"></div>
+        <button onclick="goBackToDashboard()">Regresar al Menú</button>
+    </div>
+
+    <div class="search-container" id="searchContainer">
+        <h1>Búsqueda de Productos por Fecha de Vencimiento</h1>
+        <input type="date" id="searchDate" placeholder="Selecciona una fecha" required>
+        <button onclick="searchProducts()">Buscar Productos</button>
+        <div class="search-results" id="searchResults"></div>
+        <button onclick="goBackToDashboard()">Regresar al Menú</button>
+    </div>
+
+    <div class="top-products-container" id="topProductsContainer">
+        <h1>Búsqueda de Productos Más Vendidos</h1>
+        <input type="date" id="topProductsStartDate" placeholder="Fecha de Inicio" required>
+        <input type="date" id="topProductsEndDate" placeholder="Fecha de Fin" required>
+        <button onclick="searchTopProducts()">Buscar Productos Más Vendidos</button>
+        <div class="top-products-list" id="topProductsList"></div>
+        <button onclick="goBackToDashboard()">Regresar al Menú</button>
+    </div>
+
+    <script>
+        // Credenciales válidas
+        const users = [
+            { username: "admin", password: "1234" },
+            { username: "empleado", password: "1234" } // Nuevo usuario
+        ];
+
+        // Lista de productos
+        let products = [
+            { name: "Arroz", expiration: "2024-12-01", image: "p1.jpg", price: 2.00, sales: 50 },
+            { name: "Pan", expiration: "2024-07-27", image: "p2.jpg", price: 0.15, sales: 30 },
+            { name: "Aceite", expiration: "2024-08-30", image: "p3.jpg", price: 1.00, sales: 20 },
+            { name: "Papel Higiénico", expiration: "2024-09-20", image: "p4.jpg", price: 1.50, sales: 15 },
+            { name: "Coca-Cola", expiration: "2024-08-10", image: "p5.jpg", price: 1.25, sales: 10 }
+        ];
+
+
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Evita el envío del formulario
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const user = users.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                // Credenciales válidas, mostrar el dashboard
+                document.querySelector('.login-container').style.display = "none";
+                document.getElementById('dashboard').style.display = "block";
+            } else {
+                
+                document.getElementById('errorMessage').style.display = "block";
+            }
+        });
+
+        function showProductContainer() {
+            document.getElementById('dashboard').style.display = "none";
+            document.getElementById('productContainer').style.display = "block";
+            displayProducts(); 
+        }
+
+        function showSearchContainer() {
+            document.getElementById('dashboard').style.display = "none";
+            document.getElementById('searchContainer').style.display = "block";
+            document.getElementById('searchResults').innerHTML = ''; 
+        }
+
+        function showTopProductsContainer() {
+            document.getElementById('dashboard').style.display = "none";
+            document.getElementById('topProductsContainer').style.display = "block";
+            document.getElementById('topProductsList').innerHTML = ''; 
+        }
+
+        function goBackToDashboard() {
+            document.getElementById('productContainer').style.display = "none";
+            document.getElementById('searchContainer').style.display = "none";
+            document.getElementById('topProductsContainer').style.display = "none";
+            document.getElementById('dashboard').style.display = "block";
+        }
+
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            const productName = document.getElementById('productName').value;
+            const productExpiration = document.getElementById('productExpiration').value;
+            const productImage = document.getElementById('productImage').value;
+            const productPrice = parseFloat(document.getElementById('productPrice').value);
+
+
+            if (productPrice <= 0) {
+                document.getElementById('priceErrorMessage').style.display = "block";
+                document.getElementById('successMessage').style.display = "none";
+                return;
+            } else {
+                document.getElementById('priceErrorMessage').style.display = "none";
+            }
+
+
+            const expirationYear = new Date(productExpiration).getFullYear();
+            if (expirationYear > 2024) {
+                document.getElementById('dateErrorMessage').style.display = "block";
+                document.getElementById('successMessage').style.display = "none";
+                return;
+            } else {
+                document.getElementById('dateErrorMessage').style.display = "none";
+            }
+
+          
+            const existingProduct = products.find(product => 
+                product.name === productName &&
+                product.expiration === productExpiration &&
+                product.image === productImage &&
+                product.price === productPrice
+            );
+
+            if (existingProduct) {
+                document.getElementById('errorMessage').style.display = "block";
+                document.getElementById('successMessage').style.display = "none";
+                return;
+            }
+
+            // Agregar el nuevo producto a la lista
+            products.push({ name: productName, expiration: productExpiration, image: productImage, price: productPrice, sales: 0 });
+            document.getElementById('productForm').reset(); 
+            document.getElementById('successMessage').style.display = "block";
+            document.getElementById('errorMessage').style.display = "none";
+            displayProducts(); 
+        });
+
+        function displayProducts() {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = ''; 
+
+            products.forEach((product, index) => {
+                const productItem = document.createElement('div');
+                productItem.classList.add('product-item');
+                productItem.innerHTML = `<div><img src="${product.image}" alt="${product.name}"> <strong>${product.name}</strong>: Vence el ${product.expiration} - Precio: $${product.price}</div>`;
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Eliminar';
+                deleteButton.addEventListener('click', () => deleteProduct(index));
+                productItem.appendChild(deleteButton);
+                productList.appendChild(productItem);
+            });
+        }
+
+        function deleteProduct(index) {
+            products.splice(index, 1); 
+            document.getElementById('deleteMessage').style.display = "block"; 
+            displayProducts(); 
+        }
+
+        function searchProducts() {
+            const searchDate = document.getElementById('searchDate').value;
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = ''; 
+
+            const filteredProducts = products.filter(product => product.expiration <= searchDate);
+
+            if (filteredProducts.length > 0) {
+                filteredProducts.forEach(product => {
+                    const searchItem = document.createElement('div');
+                    searchItem.classList.add('search-item');
+                    searchItem.innerHTML = `<div><img src="${product.image}" alt="${product.name}"> <strong>${product.name}</strong>: Vence el ${product.expiration} - Precio: $${product.price}</div>`;
+                    searchResults.appendChild(searchItem);
+                });
+            } else {
+                searchResults.innerHTML = '<p>No se encontraron productos que venzan en esta fecha o antes.</p>';
+            }
+        }
+
+        function searchTopProducts() {
+            const topProductsStartDate = document.getElementById('topProductsStartDate').value;
+            const topProductsEndDate = document.getElementById('topProductsEndDate').value;
+            const topProductsList = document.getElementById('topProductsList');
+            topProductsList.innerHTML = ''; 
+
+            const filteredProducts = products.filter(product => 
+                product.sales > 0 && 
+                product.expiration >= topProductsStartDate && 
+                product.expiration <= topProductsEndDate
+            );
+            filteredProducts.sort((a, b) => b.sales - a.sales); 
+
+            if (filteredProducts.length > 0) {
+                filteredProducts.forEach(product => {
+                    const topProductItem = document.createElement('div');
+                    topProductItem.classList.add('top-product-item');
+                    topProductItem.innerHTML = `<div><img src="${product.image}" alt="${product.name}"> <strong>${product.name}</strong>: Vence el ${product.expiration} - Precio: $${product.price} (${product.sales} ventas)</div>`;
+                    topProductsList.appendChild(topProductItem);
+                });
+            } else {
+                topProductsList.innerHTML = '<p>No se encontraron productos más vendidos en este período.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
